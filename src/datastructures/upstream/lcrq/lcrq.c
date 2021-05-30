@@ -105,12 +105,12 @@ void lcrq_init() {
 })
 
 
-inline int is_empty(uint64_t v) __attribute__ ((pure));
-inline uint64_t node_index(uint64_t i) __attribute__ ((pure));
-inline uint64_t set_unsafe(uint64_t i) __attribute__ ((pure));
-inline uint64_t node_unsafe(uint64_t i) __attribute__ ((pure));
-inline uint64_t tail_index(uint64_t t) __attribute__ ((pure));
-inline int crq_is_closed(uint64_t t) __attribute__ ((pure));
+inline static int is_empty(uint64_t v) __attribute__ ((pure));
+inline static uint64_t node_index(uint64_t i) __attribute__ ((pure));
+inline static uint64_t set_unsafe(uint64_t i) __attribute__ ((pure));
+inline static uint64_t node_unsafe(uint64_t i) __attribute__ ((pure));
+inline static uint64_t tail_index(uint64_t t) __attribute__ ((pure));
+inline static int crq_is_closed(uint64_t t) __attribute__ ((pure));
 
 typedef struct RingNode {
     volatile uint64_t val;
@@ -128,7 +128,7 @@ typedef struct RingQueue {
 RingQueue *head;
 RingQueue *tail;
 
-inline void init_ring(RingQueue *r) {
+inline static void init_ring(RingQueue *r) {
     int i;
 
     for (i = 0; i < RING_SIZE; i++) {
@@ -143,32 +143,32 @@ inline void init_ring(RingQueue *r) {
 int FULL;
 
 
-inline int is_empty(uint64_t v)  {
+inline static int is_empty(uint64_t v)  {
     return (v == (uint64_t)-1);
 }
 
 
-inline uint64_t node_index(uint64_t i) {
+inline static uint64_t node_index(uint64_t i) {
     return (i & ~(1ull << 63));
 }
 
 
-inline uint64_t set_unsafe(uint64_t i) {
+inline static uint64_t set_unsafe(uint64_t i) {
     return (i | (1ull << 63));
 }
 
 
-inline uint64_t node_unsafe(uint64_t i) {
+inline static uint64_t node_unsafe(uint64_t i) {
     return (i & (1ull << 63));
 }
 
 
-inline uint64_t tail_index(uint64_t t) {
+inline static uint64_t tail_index(uint64_t t) {
     return (t & ~(1ull << 63));
 }
 
 
-inline int crq_is_closed(uint64_t t) {
+inline static int crq_is_closed(uint64_t t) {
     return (t & (1ull << 63)) != 0;
 }
 
@@ -192,7 +192,7 @@ static void SHARED_OBJECT_INIT() {
 }
 
 
-inline void fixState(RingQueue *rq) {
+inline static void fixState(RingQueue *rq) {
 
     while (1) {
         uint64_t t = FAA64(&rq->tail, 0);
@@ -219,21 +219,21 @@ __thread uint64_t myunsafes;
 uint64_t closes;
 uint64_t unsafes;
 
-inline void count_closed_crq(void) {
+inline static void count_closed_crq(void) {
     mycloses++;
 }
 
 
-inline void count_unsafe_node(void) {
+inline static void count_unsafe_node(void) {
     myunsafes++;
 }
 #else
-inline void count_closed_crq(void) { }
-inline void count_unsafe_node(void) { }
+inline static void count_closed_crq(void) { }
+inline static void count_unsafe_node(void) { }
 #endif
 
 
-inline int close_crq(RingQueue *rq, const uint64_t t, const int tries) {
+inline static int close_crq(RingQueue *rq, const uint64_t t, const int tries) {
     if (tries < 10)
         return CAS64(&rq->tail, t + 1, (t + 1)|(1ull<<63));
     else
