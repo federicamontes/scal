@@ -63,7 +63,7 @@ template<typename T>
 Node* SCStack<T>::push(T item) {
     Node* node = new Node(item);
     NodePtr oldTop, newTop;
-    
+
     do {
         oldTop = top_.load();
         node->next = oldTop.value();
@@ -76,7 +76,16 @@ Node* SCStack<T>::push(T item) {
 
 template<typename T>
 Node* SCStack<T>::pop(void) {
+    NodePtr oldTop, newTop;
 
+    do {
+        oldTop = top_->load();
+        if (oldTop.value() == NULL) return NULL;
+        newTop = NodePtr(oldTop.value()->next, oldTop.tag() + 1);
+    } while(!top_->swap(oldTop, newTop));
+
+    Node* node = new Node(oldTop.value()->data);
+    return node;
 }
 
 

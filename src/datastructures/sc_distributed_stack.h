@@ -19,7 +19,7 @@ namespace sds{
     template<typename T>
     class SCVectorStack : public Stack<T> {
     public:
-        SCVectorStack(uint64_t n, uint32_t k);
+        SCVectorStack(pthread_t tid, uint64_t n, uint32_t k);
         T* push(T item);
         T* pop();
 
@@ -34,7 +34,8 @@ namespace sds{
     };
 
     template<typename T>
-    SCVectorStack<T>::SCVectorStack(uint64_t size, uint32_t threshold) {
+    SCVectorStack<T>::SCVectorStack(pthread_t tid, uint64_t size, uint32_t threshold) {
+        tid = tid;
         n = size;
         k = threshold;
         S.resize(n);
