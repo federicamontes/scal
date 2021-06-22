@@ -2,8 +2,8 @@
 // Created by federicamontes on 17/06/21.
 //Implementing a Sequential Consistent stack
 
-#ifndef CLIONPROJECTS_SC_STACK_H
-#define CLIONPROJECTS_SC_STACK_H
+#ifndef SC_STACK_H
+#define SC_STACK_H
 
 #include <atomic>
 
@@ -11,85 +11,91 @@
 #include "util/allocation.h"
 #include "util/platform.h"
 #include "util/atomic_value_new.h"
+#include "datastructures/pool.h"
 
 
 namespace sc {
-    namespace detail {
-        template<typename T>
-        struct Node: StackNode {
-            explicit Node(T item) : next(NULL), data(item) {}
 
-            Node<T>* next;
-            T data;
-        };
-    } //end detail
+namespace detail {
+
+template<typename T>
+struct Node {
+    explicit Node(T item) : next(NULL), data(item) {}
+
+    Node<T>* next;
+    T data;
+};
+
+} //end detail
 
 template<typename T>
 class SCStack : public Stack<T> {
 
-public:
-    SCStack();
-    SCStack(uint32_t s);
-    Node* push(T item);
-    Node* pop(void);
-
-    inline bool put(T item) { return push(item); }
-
-    inline State put_state() { return top_->load().tag(); }
-
-    inline bool empty() { return top_->load().value == NULL; }
-
-    inline bool get_return_put_state(T *item, State* put_state);
-
 private:
-        typedef sc::detail::Node<T> Node;
+        typedef detail::Node<T> Node;
         typedef TaggedValue<Node*> NodePtr;
         typedef AtomicTaggedValue<Node*, 64, 64> AtomicNodePtr;
-        typedef uint32_t size;
+        uint32_t size;
+
 
         AtomicNodePtr* top_;
-    };
+
+public:
+    SCStack();
+
+    //virtual detail::Node<T>* push(T* item);
+    //virtual detail::Node<T>* pop(void);
+
+    
+    bool pop(T *item);
+    bool push(T item);
+
+
+    inline bool empty() { return top_->load().value() == NULL; }
+
+};
 
 template<typename T>
 SCStack<T>::SCStack() : top_(new AtomicNodePtr()) {}
 
-template<typename T>
-SCStack<T>::SCStack<typename T>(uint32_t s) {
-    size = s;
-}
 
 
 template<typename T>
-Node* SCStack<T>::push(T item) {
+bool SCStack<T>::push(T item) {
     Node* node = new Node(item);
     NodePtr oldTop, newTop;
 
+    printf("SCStack<T>::push %d: \n", item);
+
     do {
-        oldTop = top_.load();
+        oldTop = top_->load();
         node->next = oldTop.value();
         newTop = NodePtr(node, oldTop.tag() + 1);
     } while(!top_->swap(oldTop, newTop));
 
-    return node;
+    return true;
 }
 
 
+
 template<typename T>
-Node* SCStack<T>::pop(void) {
+bool SCStack<T>::pop(T *item) {
     NodePtr oldTop, newTop;
 
     do {
         oldTop = top_->load();
-        if (oldTop.value() == NULL) return NULL;
+        if (oldTop.value() == NULL) return false;
         newTop = NodePtr(oldTop.value()->next, oldTop.tag() + 1);
     } while(!top_->swap(oldTop, newTop));
 
-    Node* node = new Node(oldTop.value()->data);
-    return node;
+    *item = oldTop.value()->data;
+
+	printf("SCStack<T>::pop %d: \n", *item);
+    return true;
 }
 
 
 
 } //end sc
 
-#endif //CLIONPROJECTS_SC_STACK_H
+#endif //SC_STACK_H
