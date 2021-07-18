@@ -257,6 +257,11 @@ prodcon_sc_stack_SOURCES = \
         $(PRODCON_BASE_OBJS) \
         src/benchmark/std_glue/glue_sc_stack.cc
 
+bin_PROGRAMS += prodcon-sc-distributed-stack
+prodcon_sc_stack_SOURCES = \
+        $(PRODCON_BASE_OBJS) \
+        src/benchmark/std_glue/glue_sc_distributed_stack.cc
+
 #
 # SPF benchmark
 #

@@ -974,6 +974,36 @@
         'prodcon-base',
         'glue.gyp:sc-stack',
       ],
+    },
+    {
+      'target_name': 'seqalt-sc-stack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'seqalt-base',
+        'glue.gyp:sc-stack',
+      ],
+    },
+    {
+      'target_name': 'prodcon-sc-distributed-stack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'prodcon-base',
+        'glue.gyp:sc-distributed-stack',
+      ],
+    },
+    {
+      'target_name': 'seqalt-sc-distributed-stack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'seqalt-base',
+        'glue.gyp:sc-distributed-stack',
+      ],
     }
   ]
 }

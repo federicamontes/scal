@@ -378,6 +378,13 @@
       'sources': [
         'src/benchmark/std_glue/glue_sc_stack.cc'
       ],
+    },
+    {
+      'target_name': 'sc-distributed-stack',
+      'type': 'static_library',
+      'sources': [
+        'src/benchmark/std_glue/glue_sc_distributed_stack.cc'
+      ],
     }
   ]
 }

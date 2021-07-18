@@ -41,8 +41,8 @@ all_deps :=
 
 
 CC.target ?= $(CC)
-CFLAGS.target ?= $(CPPFLAGS) $(CFLAGS)
-CXX.target ?= $(CXX)
+CFLAGS.target ?= $(CPPFLAGS) $(CFLAGS) 
+CXX.target ?= $(CXX) 
 CXXFLAGS.target ?= $(CPPFLAGS) $(CXXFLAGS)
 LINK.target ?= $(LINK)
 LDFLAGS.target ?= $(LDFLAGS)
@@ -688,6 +688,11 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
 endif
 ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
     $(findstring $(join ^,$(prefix)),\
+                 $(join ^,prodcon-sc-distributed-stack.target.mk)))),)
+  include prodcon-sc-distributed-stack.target.mk
+endif
+ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
+    $(findstring $(join ^,$(prefix)),\
                  $(join ^,prodcon-sc-stack.target.mk)))),)
   include prodcon-sc-stack.target.mk
 endif
@@ -740,6 +745,11 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
     $(findstring $(join ^,$(prefix)),\
                  $(join ^,rts-queue.target.mk)))),)
   include rts-queue.target.mk
+endif
+ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
+    $(findstring $(join ^,$(prefix)),\
+                 $(join ^,sc-distributed-stack.target.mk)))),)
+  include sc-distributed-stack.target.mk
 endif
 ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
     $(findstring $(join ^,$(prefix)),\
@@ -915,6 +925,16 @@ ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
     $(findstring $(join ^,$(prefix)),\
                  $(join ^,seqalt-rts-queue.target.mk)))),)
   include seqalt-rts-queue.target.mk
+endif
+ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
+    $(findstring $(join ^,$(prefix)),\
+                 $(join ^,seqalt-sc-distributed-stack.target.mk)))),)
+  include seqalt-sc-distributed-stack.target.mk
+endif
+ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
+    $(findstring $(join ^,$(prefix)),\
+                 $(join ^,seqalt-sc-stack.target.mk)))),)
+  include seqalt-sc-stack.target.mk
 endif
 ifeq ($(strip $(foreach prefix,$(NO_LOAD),\
     $(findstring $(join ^,$(prefix)),\
