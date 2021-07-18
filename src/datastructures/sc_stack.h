@@ -6,6 +6,7 @@
 #define SC_STACK_H
 
 #include <atomic>
+#include <thread>
 
 #include "datastructures/stack.h"
 #include "util/allocation.h"
@@ -65,7 +66,7 @@ bool SCStack<T>::push(T item) {
     Node* node = new Node(item);
     NodePtr oldTop, newTop;
 
-    printf("SCStack<T>::push %d: \n", item);
+    printf("SCStack<T>::push %lu: \n", item);
 
     do {
         oldTop = top_->load();
@@ -90,7 +91,7 @@ bool SCStack<T>::pop(T *item) {
 
     *item = oldTop.value()->data;
 
-	printf("SCStack<T>::pop %d: \n", *item);
+	printf("SCStack<T>::pop %lu: \n", *item);
     return true;
 }
 
