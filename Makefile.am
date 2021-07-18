@@ -45,7 +45,9 @@ DATASTRUCTURE_INCLUDES = \
 	src/datastructures/ts_stack_buffer.h \
 	src/datastructures/ts_queue_buffer.h \
 	src/datastructures/ts_deque_buffer.h \
-	src/datastructures/dts_queue.h
+	src/datastructures/dts_queue.h \
+	src/datastructures/sc_stack.h \
+	src/datastructures/sc_distributed_stack.h
 
 noinst_HEADERS = \
 	$(DATASTRUCTURE_INCLUDES) \
@@ -249,6 +251,11 @@ bin_PROGRAMS += prodcon-eb-stack
 prodcon_eb_stack_SOURCES = \
         $(PRODCON_BASE_OBJS) \
         src/benchmark/std_glue/glue_eb_stack.cc
+
+bin_PROGRAMS += prodcon-sc-stack
+prodcon_sc_stack_SOURCES = \
+        $(PRODCON_BASE_OBJS) \
+        src/benchmark/std_glue/glue_sc_stack.cc
 
 #
 # SPF benchmark

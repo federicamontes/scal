@@ -964,6 +964,16 @@
         'seqalt-base',
         'glue.gyp:lru-dds-treiber-stack',
       ],
+    },
+    {
+      'target_name': 'prodcon-sc-stack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'prodcon-base',
+        'glue.gyp:sc-stack',
+      ],
     }
   ]
 }

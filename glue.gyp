@@ -371,6 +371,13 @@
       'sources': [
         'src/benchmark/std_glue/glue_lru_dds_treiber_stack.cc'
       ],
+    },
+    {
+      'target_name': 'sc-stack',
+      'type': 'static_library',
+      'sources': [
+        'src/benchmark/std_glue/glue_sc_stack.cc'
+      ],
     }
   ]
 }
