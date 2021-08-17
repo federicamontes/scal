@@ -86,6 +86,13 @@
       ],
     },
     {
+      'target_name': 'concurrent-base',
+      'type': 'static_library',
+      'sources': [
+        'src/concurrent/main.cc',
+      ],
+    },
+    {
       'target_name': 'prodcon-ms',
       'type': 'executable',
       'libraries': [ '<@(default_libraries)' ],
@@ -1002,6 +1009,16 @@
       'dependencies': [
         'libscal',
         'seqalt-base',
+        'glue.gyp:sc-distributed-stack',
+      ],
+    },
+    {
+      'target_name': 'concurrent-sc-distributed-stack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'concurrent-base',
         'glue.gyp:sc-distributed-stack',
       ],
     }
