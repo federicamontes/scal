@@ -88,8 +88,11 @@
     {
       'target_name': 'concurrent-base',
       'type': 'static_library',
+      'libraries': [ '<@(default_libraries)' ],
       'sources': [
-        'src/concurrent/main.cc',
+        'src/benchmark/common.h',
+        'src/benchmark/common.cc',
+        'src/benchmark/concurrent/concurrent.cc',
       ],
     },
     {
@@ -993,34 +996,44 @@
       ],
     },
     {
-      'target_name': 'prodcon-sc-distributed-stack',
+      'target_name': 'prodcon-sc-distributed-stack-treiber',
       'type': 'executable',
       'libraries': [ '<@(default_libraries)' ],
       'dependencies': [
         'libscal',
         'prodcon-base',
-        'glue.gyp:sc-distributed-stack',
+        'glue.gyp:sc-distributed-stack-treiber',
       ],
     },
     {
-      'target_name': 'seqalt-sc-distributed-stack',
+      'target_name': 'seqalt-sc-distributed-stack-treiber',
       'type': 'executable',
       'libraries': [ '<@(default_libraries)' ],
       'dependencies': [
         'libscal',
         'seqalt-base',
-        'glue.gyp:sc-distributed-stack',
+        'glue.gyp:sc-distributed-stack-treiber',
       ],
     },
     {
-      'target_name': 'concurrent-sc-distributed-stack',
+      'target_name': 'seqalt-sc-distributed-stack-ebstack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'seqalt-base',
+        'glue.gyp:sc-distributed-stack-ebstack',
+      ],
+    },
+    {
+      'target_name': 'concurrent-sc-distributed-stack-treiber',
       'type': 'executable',
       'libraries': [ '<@(default_libraries)' ],
       'dependencies': [
         'libscal',
         'concurrent-base',
-        'glue.gyp:sc-distributed-stack',
+        'glue.gyp:sc-distributed-stack-treiber',
       ],
-    }
+    },
   ]
 }
