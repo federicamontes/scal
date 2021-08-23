@@ -1035,5 +1035,35 @@
         'glue.gyp:sc-distributed-stack-treiber',
       ],
     },
+    {
+      'target_name': 'concurrent-sc-treiber',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'concurrent-base',
+        'glue.gyp:treiber',
+      ],
+    },
+    {
+      'target_name': 'concurrent-sc-distributed-stack-ebstack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'concurrent-base',
+        'glue.gyp:sc-distributed-stack-ebstack',
+      ],
+    },
+    {
+      'target_name': 'concurrent-sc-eb-stack',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'concurrent-base',
+        'glue.gyp:eb-stack',
+      ],
+    },
   ]
 }
