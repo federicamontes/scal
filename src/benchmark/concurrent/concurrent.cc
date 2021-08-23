@@ -27,10 +27,14 @@
 #include "util/workloads.h"
 
 DEFINE_string(prealloc_size, "1g", "tread local space that is initialized");
+DEFINE_uint64(operations, 1000, "number of operations per thread");
 DEFINE_uint64(num_threads, 1, "number of threads");
+DEFINE_uint64(c, 5000, "computational workload");
 DEFINE_bool(barrier, false, "uses a barrier between the enqueues and "
     "dequeues such that first all elements are enqueued, then all elements"
     "are dequeued");
+DEFINE_bool(print_summary, true, "print execution summary");
+
 
 
 //TODO: usare il main come seqalt.cc utilizzando una Pool e in ogni std_glue chiamare gli altri stack
@@ -61,38 +65,22 @@ uint64_t global_start_time_;
 
 void ConcurrentBench::bench_func(void) {
 
-	//sds::SCVectorStack<uint64_t, scal::TreiberStack<uint64_t>> *vec = (sds::SCVectorStack<uint64_t, scal::TreiberStack<uint64_t>> *) arg;
-	//scal::TreiberStack<uint64_t> *stack = (scal::TreiberStack<uint64_t> *) arg;
-	//sds::SCVectorStack<uint64_t, scal::EliminationBackoffStack<uint64_t>> *vec = (sds::SCVectorStack<uint64_t, scal::EliminationBackoffStack<uint64_t>> *) arg;
-
 
 	Pool<uint64_t> *ds = static_cast<Pool<uint64_t>*>(data_); 
-	//sds::SCVectorStack<uint64_t, Pool<uint64_t>> *ds = static_cast<sds::SCVectorStack<uint64_t, Pool<uint64_t>*>(data_)>;
 
-	/*global_start_time_ = 0;
-  int rc = pthread_barrier_wait(&start_barrier_);
-  printf("ConcurrentBench::pthread_barrier_wait\n");
-  if (rc != 0 && rc != PTHREAD_BARRIER_SERIAL_THREAD) {
-    fprintf(stderr, "%s: pthread_barrier_wait failed.\n", __func__);
-    abort();
-  }
 
-	if (rc == PTHREAD_BARRIER_SERIAL_THREAD) {
-		printf("ConcurrentBench::global_start_time_ %lu\n", global_start_time_);
-    __sync_bool_compare_and_swap(&global_start_time_, 0, get_utime());
-	}*/
+	uint64_t thread_id = scal::ThreadContext::get().thread_id();
 
-	uint64_t value = 1000;
+	uint64_t value;
 
-	for(int i = 0; i < 100; i++) {
+	for(uint64_t i = 0; i <= FLAGS_operations; i++) {
+		value = thread_id * FLAGS_operations + i;
 		ds->put(value);
-		value++;
 	}
 
 
-	for(int i = 0; i < 100; i++) {
+	for(int i = 0; i < 4; i++) {
 		ds->get(&value);
-		value--;
 	}
 
 }
@@ -107,26 +95,58 @@ int main(int argc, const char **argv) {
     google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
 
 
-    uint64_t tlsize = scal::human_size_to_pages(FLAGS_prealloc_size.c_str(),
-                                              FLAGS_prealloc_size.size());
+    /*uint64_t tlsize = scal::human_size_to_pages(FLAGS_prealloc_size.c_str(),
+                                              FLAGS_prealloc_size.size());*/
 
     g_num_threads = FLAGS_num_threads;
 
-    scal::ThreadLocalAllocator::Get().Init(tlsize, true);
-	  scal::ThreadContext::prepare(g_num_threads+1);
+    scal::ThreadLocalAllocator::Get().Init(4096, true);
+	scal::ThreadContext::prepare(g_num_threads+1);
     scal::ThreadContext::assign_context();
 
     void *ds = ds_new();
 
 	  ConcurrentBench *benchmark = new ConcurrentBench(
 		  g_num_threads,
-		  tlsize,
+		  4096,
 		  ds);
 	  benchmark->run();
 
-   
 
-    return 0;
+	if (FLAGS_print_summary) {
+
+	    uint64_t exec_time = benchmark->execution_time();
+
+	    uint64_t num_operations = FLAGS_operations * FLAGS_num_threads;
+
+		char buffer[1024] = {0};
+	    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " ,\"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " ,\"throughput\": %" PRIu64 "",
+	        g_num_threads,
+	        exec_time,
+	        FLAGS_operations,
+	        FLAGS_c,
+	        (uint64_t)(num_operations / (static_cast<double>(exec_time) / 1000)));
+
+	    if (n != strlen(buffer)) {
+	      fprintf(stderr, "%s: error: failed to create summary string\n", __func__);
+	      abort();
+	    }
+
+	    char *ds_stats = ds_get_stats();
+	    if (ds_stats != NULL) {
+	      if (n + strlen(ds_stats) >= 1023) {  // separating space + '\0'
+	        fprintf(stderr, "%s: error: strings too long\n", __func__);
+	        abort();
+	      }
+	      strcat(buffer, " ");
+	      strcat(buffer, ds_stats);
+	      strcat(buffer, "}");
+	    }
+	    printf("%s\n", buffer);
+
+	}
+
+    return EXIT_SUCCESS;
 }
 
 
