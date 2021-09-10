@@ -27,6 +27,7 @@
 DEFINE_string(prealloc_size, "1g", "tread local space that is initialized");
 DEFINE_uint64(producers, 1, "number of producers");
 DEFINE_uint64(consumers, 1, "number of consumers");
+DEFINE_uint64(threshold, 100, "stealing threshold");
 DEFINE_uint64(operations, 1000, "number of operations per producer");
 DEFINE_uint64(c, 5000, "computational workload");
 DEFINE_bool(print_summary, true, "print execution summary");
@@ -58,14 +59,20 @@ class ProdConBench : public Benchmark {
 
 
 uint64_t g_num_threads;
+uint64_t g_threshold;
+uint64_t g_operations;
+uint64_t cnt_push;
+uint64_t cnt_pop;
 
 int main(int argc, const char **argv) {
   std::string usage("Producer/consumer micro benchmark.");
   google::SetUsageMessage(usage);
   google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
 
-  size_t tlsize = scal::HumanSizeToPages(
-      FLAGS_prealloc_size.c_str(), FLAGS_prealloc_size.size());
+  /*size_t tlsize = scal::HumanSizeToPages(
+      FLAGS_prealloc_size.c_str(), FLAGS_prealloc_size.size());*/
+
+  size_t tlsize = 4096;
 
   // Init the main program as executing thread (may use rnd generator or tl
   // allocs).
@@ -103,30 +110,32 @@ int main(int argc, const char **argv) {
   if (FLAGS_print_summary) {
     uint64_t exec_time = benchmark->execution_time();
 
-    uint64_t num_operations;
+    uint64_t g_operations;
     
     if (FLAGS_barrier) {
       // We only measure the time needed for the all consuming operations
       // which is the same as the number of all produced elements.
-      num_operations = FLAGS_operations * FLAGS_producers;
+      g_operations = FLAGS_operations * FLAGS_producers;
     } else if (FLAGS_consumers == 0) {
       // We measure the time needed of all producer operations.
-      num_operations = FLAGS_operations * FLAGS_producers;
+      g_operations = FLAGS_operations * FLAGS_producers;
     } else {
       // Each element produced is also consumed. Therefore the number of
       // operations is two times the number of elements produced.
-      num_operations = FLAGS_operations * FLAGS_producers * 2;
+      g_operations = FLAGS_operations * FLAGS_producers * 2;
     }
 
     char buffer[1024] = {0};
-    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " ,\"producers\": %" PRIu64 " ,\"consumers\": %" PRIu64 " ,\"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " ,\"throughput\": %" PRIu64 "",
+    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " ,\"producers\": %" PRIu64 " ,\"consumers\": %" PRIu64 " ,\"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " , ,\"num_push\": %" PRIu64 " , ,\"num_pop\": %" PRIu64 " ,\"c\": %" PRIu64 " ,\"throughput\": %" PRIu64 "",
         g_num_threads,
         FLAGS_producers,
         FLAGS_consumers,
         exec_time,
         FLAGS_operations,
+        cnt_push,
+        cnt_pop,
         FLAGS_c,
-        (uint64_t)(num_operations / (static_cast<double>(exec_time) / 1000)));
+        (uint64_t)(g_operations / (static_cast<double>(exec_time) / 1000)));
     if (n != strlen(buffer)) {
       fprintf(stderr, "%s: error: failed to create summary string\n", __func__);
       abort();
@@ -178,6 +187,7 @@ void ProdConBench::producer() {
       fprintf(stderr, "%s: error: put operation failed.\n", __func__);
       abort();
     }
+    cnt_push++;
     scal::StdOperationLogger::get().response(true, item);
     scal::RdtscWait(FLAGS_c);
   }
@@ -206,8 +216,9 @@ void ProdConBench::consumer() {
     scal::StdOperationLogger::get().response(ok, ret);
     scal::RdtscWait(FLAGS_c);
     if (!ok) {
-      continue;
+      j++;
     }
+    cnt_pop++;
     j++;
   }
 }
