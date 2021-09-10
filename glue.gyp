@@ -375,6 +375,7 @@
     {
       'target_name': 'sc-stack',
       'type': 'static_library',
+      'cflags': [ ],
       'sources': [
         'src/benchmark/std_glue/glue_sc_stack.cc'
       ],
@@ -382,6 +383,7 @@
     {
       'target_name': 'sc-distributed-stack-treiber',
       'type': 'static_library',
+      'cflags': [ ],
       'sources': [
         'src/benchmark/std_glue/glue_sc_distributed_stack_treiber.cc'
       ],
@@ -389,8 +391,17 @@
     {
       'target_name': 'sc-distributed-stack-ebstack',
       'type': 'static_library',
+      'cflags': [ ],
       'sources': [
         'src/benchmark/std_glue/glue_sc_distributed_stack_ebstack.cc'
+      ],
+    },
+    {
+      'target_name': 'sc-distributed-ts-hardware-stack',
+      'type': 'static_library',
+      'cflags': [ ],
+      'sources': [
+        'src/benchmark/std_glue/glue_sc_distributed_ts_hardware_stack.cc'
       ],
     },
   ]
