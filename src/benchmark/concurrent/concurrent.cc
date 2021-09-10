@@ -11,9 +11,6 @@
 
 #include "benchmark/common.h"
 #include "benchmark/std_glue/std_pipe_api.h"
-#include "datastructures/treiber_stack.h"
-//#include "datastructures/elimination_backoff_stack.h"
-//#include "datastructures/sc_stack.h"
 #include "datastructures/sc_distributed_stack.h"
 #include "datastructures/pool.h"
 
@@ -27,8 +24,9 @@
 #include "util/workloads.h"
 
 DEFINE_string(prealloc_size, "1g", "tread local space that is initialized");
-DEFINE_uint64(operations, 1000, "number of operations per thread");
+DEFINE_uint64(operations, 80, "number of operations per thread");
 DEFINE_uint64(num_threads, 1, "number of threads");
+DEFINE_uint64(threshold, 100, "stealing threshold");
 DEFINE_uint64(c, 5000, "computational workload");
 DEFINE_bool(barrier, false, "uses a barrier between the enqueues and "
     "dequeues such that first all elements are enqueued, then all elements"
@@ -36,9 +34,6 @@ DEFINE_bool(barrier, false, "uses a barrier between the enqueues and "
 DEFINE_bool(print_summary, true, "print execution summary");
 
 
-
-//TODO: usare il main come seqalt.cc utilizzando una Pool e in ogni std_glue chiamare gli altri stack
-//TODO: nel main.cpp chiamo void *ds = ds_new(); all'inizio di tutto prima di creare i thread
 
 class ConcurrentBench : public scal::Benchmark {
  public:
@@ -59,7 +54,12 @@ class ConcurrentBench : public scal::Benchmark {
 
 
 uint64_t g_num_threads;
+uint64_t g_threshold;
+uint64_t g_operations;
 uint64_t global_start_time_;
+
+
+
 
 
 
@@ -68,19 +68,22 @@ void ConcurrentBench::bench_func(void) {
 
 	Pool<uint64_t> *ds = static_cast<Pool<uint64_t>*>(data_); 
 
-
 	uint64_t thread_id = scal::ThreadContext::get().thread_id();
 
-	uint64_t value;
+	thread_local uint64_t value;
 
-	for(uint64_t i = 0; i <= FLAGS_operations; i++) {
-		value = thread_id * FLAGS_operations + i;
+
+	for(uint64_t i = 0; i < g_operations; i++) {
+		value = thread_id * g_operations + i;
 		ds->put(value);
 	}
 
-
-	for(int i = 0; i < 4; i++) {
+	//thread_local uint64_t res;
+	//thread_local uint64_t j = g_operations-1;
+	for(uint64_t i = 0; i < g_operations; i++) {
+		//res = thread_id * g_operations + j;
 		ds->get(&value);
+		//--j;
 	}
 
 }
@@ -95,35 +98,43 @@ int main(int argc, const char **argv) {
     google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
 
 
-    /*uint64_t tlsize = scal::human_size_to_pages(FLAGS_prealloc_size.c_str(),
+    /*uint64_t tlsize = scal::Human_size_to_pages(FLAGS_prealloc_size.c_str(),
                                               FLAGS_prealloc_size.size());*/
 
-    g_num_threads = FLAGS_num_threads;
+    uint64_t tlsize = 4096;
 
-    scal::ThreadLocalAllocator::Get().Init(4096, true);
+    g_num_threads = FLAGS_num_threads;
+    g_threshold = FLAGS_threshold;
+    g_operations = FLAGS_operations;
+
+
+
+    scal::ThreadLocalAllocator::Get().Init(tlsize, true);
 	scal::ThreadContext::prepare(g_num_threads+1);
     scal::ThreadContext::assign_context();
 
     void *ds = ds_new();
 
-	  ConcurrentBench *benchmark = new ConcurrentBench(
-		  g_num_threads,
-		  4096,
-		  ds);
-	  benchmark->run();
+	ConcurrentBench *benchmark = new ConcurrentBench(
+		g_num_threads,
+		tlsize,
+		ds);
+	benchmark->run();
 
 
 	if (FLAGS_print_summary) {
 
 	    uint64_t exec_time = benchmark->execution_time();
 
-	    uint64_t num_operations = FLAGS_operations * FLAGS_num_threads;
+	    uint64_t num_operations = g_operations * g_num_threads;
+
 
 		char buffer[1024] = {0};
-	    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " ,\"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " ,\"throughput\": %" PRIu64 "",
+	    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " , \"threshold\": %" PRIu64 ", \"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " ,\"throughput\": %" PRIu64 "",
 	        g_num_threads,
+	        g_threshold,
 	        exec_time,
-	        FLAGS_operations,
+	        g_operations,
 	        FLAGS_c,
 	        (uint64_t)(num_operations / (static_cast<double>(exec_time) / 1000)));
 
@@ -145,6 +156,7 @@ int main(int argc, const char **argv) {
 	    printf("%s\n", buffer);
 
 	}
+	
 
     return EXIT_SUCCESS;
 }
