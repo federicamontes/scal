@@ -25,6 +25,8 @@
 DEFINE_string(prealloc_size, "1g", "tread local space that is initialized");
 DEFINE_uint64(threads, 1, "number of threads");
 DEFINE_uint64(elements, 1000, "number of elements enqueued per thread");
+DEFINE_uint64(operations, 1000, "number of operations per thread");
+DEFINE_uint64(threshold, 100, "stealing threshold");
 DEFINE_uint64(prefill, 0, "number of elements enqueued per thread before "
                           "the first dequeue");
 DEFINE_uint64(c, 5000, "computational workload");
@@ -50,18 +52,25 @@ class SeqAltBench : public scal::Benchmark {
 };
 
 uint64_t g_num_threads;
+uint64_t g_threshold;
+uint64_t g_operations;
 
 int main(int argc, const char **argv) {
   std::string usage("SeqAlt micro benchmark.");
   google::SetUsageMessage(usage);
   google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
 
-  uint64_t tlsize = scal::human_size_to_pages(FLAGS_prealloc_size.c_str(),
-                                              FLAGS_prealloc_size.size());
+  /*uint64_t tlsize = scal::human_size_to_pages(FLAGS_prealloc_size.c_str(),
+                                              FLAGS_prealloc_size.size());*/
 
+
+  uint64_t tlsize = 4096;
   // Init the main program as executing thread (may use rnd generator or tl
   // allocs).
   g_num_threads = FLAGS_threads;
+  g_threshold = FLAGS_threshold;
+  g_operations = FLAGS_elements;
+
   scal::tlalloc_init(tlsize, true /* touch pages */);
   //threadlocals_init();
   scal::ThreadContext::prepare(g_num_threads + 1);
@@ -90,8 +99,9 @@ int main(int argc, const char **argv) {
     uint64_t exec_time = benchmark->execution_time();
     char buffer[1024] = {0};
 
-    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " ,\"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " ,\"aggr\": %" PRIu64 "",
+    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " , \"threshold\": %" PRIu64 " ,\"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " ,\"aggr\": %" PRIu64 "",
         FLAGS_threads,
+        g_threshold,
         exec_time,
         FLAGS_elements,
         FLAGS_c,
@@ -128,7 +138,7 @@ void SeqAltBench::bench_func(void) {
   /*struct sds::element<uint64_t> *obj = new struct sds::element<uint64_t>;
   obj->index = 0; //only one thread*/
 
-  for (uint64_t i = 1; i <= FLAGS_elements + FLAGS_prefill - 1; i++) {
+  for (uint64_t i = 1; i <= FLAGS_elements + FLAGS_prefill -1; i++) {
     if (i <= FLAGS_elements) {
       item = thread_id * FLAGS_elements + i;
       //obj->value = item;
@@ -145,6 +155,7 @@ void SeqAltBench::bench_func(void) {
     if (i >= FLAGS_prefill) {
       scal::StdOperationLogger::get().invoke(scal::LogType::kDequeue);
       if (!ds->get(&item)) { // ds->get(obj) for any DS
+        continue;
         if (!FLAGS_allow_empty_returns) {
           // We should always be able to get an item.
           fprintf(stderr, "%s: error: get operation failed.\n", __func__);
