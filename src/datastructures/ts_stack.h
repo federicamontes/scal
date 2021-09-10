@@ -11,6 +11,9 @@
 #include "datastructures/stack.h"
 #include "util/malloc.h"
 #include "util/platform.h"
+#include "util/allocation.h"
+#include "util/atomic_value_new.h"
+
 
 template<typename T, typename TSBuffer, typename Timestamp>
 class TSStack : public Stack<T> {
@@ -19,20 +22,12 @@ class TSStack : public Stack<T> {
     TSBuffer *buffer_;
     Timestamp *timestamping_;
 
+
   public:
 
     TSStack () {
 
-      printf("costruttore\n");
-
-      timestamping_ = static_cast<Timestamp*>(
-          scal::get<Timestamp>(scal::kCachePrefetch * 4));
-
-      timestamping_->initialize(0, 1);
-
-      buffer_ = static_cast<TSBuffer*>(
-          scal::get<TSBuffer>(scal:: kCachePrefetch * 4));
-      buffer_->initialize(1, timestamping_);
+  
     }
 
 
@@ -53,8 +48,9 @@ class TSStack : public Stack<T> {
     }
 
     inline bool push(T element) {
-      printf("TSStack::push %lu\n", element);
+      
       std::atomic<uint64_t> *item = buffer_->insert_right(element);
+      //printf("TSStack::push %lu\n", element);
       timestamping_->set_timestamp(item);
       return true;
     }
@@ -64,16 +60,24 @@ class TSStack : public Stack<T> {
       // elimination optimization.
       uint64_t invocation_time[2];
       timestamping_->read_time(invocation_time);
-      printf("TSStack::pop %lu\n", *element);
+      
       while (buffer_->try_remove_right(element, invocation_time)) {
 
         if (*element != (T)NULL) {
+          //printf("TSStack::pop %lu\n", *element);
           return true;
         }
       }
       // The stack was empty, return false.
       return false;
     }
+
+    void printStack(int index) {
+
+    }
+
+
+
 };
 
 #endif  // SCAL_DATASTRUCTURES_TS_DATASTRUCTURE_H_

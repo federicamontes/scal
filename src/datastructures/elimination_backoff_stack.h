@@ -59,6 +59,22 @@ class EliminationBackoffStack : public Stack<T> {
   bool push(T item);
   bool pop(T *item);
 
+  inline bool empty() {
+    return top_->load().value() == NULL;
+  }
+
+
+  void printStack(int index) {
+
+    Node* n = new Node(0);
+    n = top_->load().value();
+    while(n->next != NULL) {
+      printf("Stampo eb-stack %lu\n", n->data);
+      n = n->next;
+    }
+  }
+
+
   char* ds_get_stats(void) {
     char buffer[255] = { 0 };
     uint32_t n = snprintf(buffer,
@@ -99,48 +115,14 @@ class EliminationBackoffStack : public Stack<T> {
 
 template<typename T>
 EliminationBackoffStack<T>::EliminationBackoffStack() 
-: num_threads_(2), size_collision_(1), delay_(1500) {
+: num_threads_(5), size_collision_(1), delay_(1500) {
 
-
-  top_ = new AtomicNodePtr();
-
-
-  operations_ = static_cast<Operation**>(
-      ThreadLocalAllocator::Get().CallocAligned(num_threads_, 
-          sizeof(Operation*), kCachePrefetch * 4));
-
-  location_ = static_cast<std::atomic<uint64_t>**>(
-      ThreadLocalAllocator::Get().CallocAligned(num_threads_, 
-          sizeof(std::atomic<uint64_t>*), kCachePrefetch * 4));
-
-  collision_ = static_cast<std::atomic<uint64_t>**>(
-      ThreadLocalAllocator::Get().CallocAligned(size_collision_,
-          sizeof(TaggedValue<uint64_t>*), kCachePrefetch * 4));
-  
-
-  void* mem;
-  for (uint64_t i = 0; i < num_threads_; i++) {
-    mem = MallocAligned(sizeof(Operation), kCachePrefetch * 4);
-    operations_[i] = new (mem) Operation();
-  }
-
-  for (uint64_t i = 0; i < num_threads_; i++) {
-    mem = MallocAligned(sizeof(std::atomic<uint64_t>), kCachePrefetch * 4);
-    location_[i] = new (mem) std::atomic<uint64_t>();
-  }
-
-  for (uint64_t i = 0; i < size_collision_; i++) {
-    mem = MallocAligned(sizeof(std::atomic<uint64_t>), kCachePrefetch * 4);
-    collision_[i] = new (mem) std::atomic<uint64_t>();
-  
-  }
 }
 
 template<typename T>
 EliminationBackoffStack<T>::EliminationBackoffStack(
     uint64_t num_threads, uint64_t size_collision, uint64_t delay) 
   : num_threads_(num_threads), size_collision_(size_collision), delay_(delay) {
-
 
   top_ = new AtomicNodePtr();
 
@@ -206,7 +188,6 @@ bool EliminationBackoffStack<T>::try_collision(
 template<typename T>
 bool EliminationBackoffStack<T>::backoff(Opcode opcode, T *item) {
   uint64_t thread_id = ThreadContext::get().thread_id();
-  //errore: il thread_id è un valore diverso da quello di partenza e va in segfault
   operations_[thread_id]->opcode = opcode;
   operations_[thread_id]->data = *item;
   location_[thread_id]->store(thread_id);
@@ -260,7 +241,7 @@ bool EliminationBackoffStack<T>::push(T item) {
   Node *n = new Node(item);
   NodePtr top_old;
   NodePtr top_new;
-  printf("EliminationBackoffStack<T>::push %lu\n", item);
+  //printf("EliminationBackoffStack<T>::push %lu\n", item);
   while (true) {
     top_old = top_->load();
     n->next = top_old.value();
@@ -284,7 +265,7 @@ bool EliminationBackoffStack<T>::pop(T *item) {
       }
   NodePtr top_old;
   NodePtr top_new;
-  printf("EliminationBackoffStack<T>::pop %lu\n", *item);
+  
   while (true) {
     top_old = top_->load();
     if (top_old.value() == NULL) {
@@ -301,6 +282,7 @@ bool EliminationBackoffStack<T>::pop(T *item) {
     }
   }
   *item = top_old.value()->data;
+  //printf("EliminationBackoffStack<T>::pop %lu\n", *item);
   return true;
 }
 

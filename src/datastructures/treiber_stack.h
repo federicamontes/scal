@@ -15,6 +15,7 @@
 #include "util/allocation.h"
 #include "util/atomic_value_new.h"
 #include "util/platform.h"
+#include "util/threadlocals.h"
 
 namespace scal {
 
@@ -57,6 +58,16 @@ class TreiberStack : public Stack<T> {
 
   inline bool get_return_put_state(T *item, State* put_state);
 
+
+  inline void printStack(int index) {
+    Node* n = new Node(0);
+    n = top_->load().value();
+    while(n->next != NULL) {
+      printf("Stampo treiber-stack di %d con %lu\n", index, n->data);
+      n = n->next;
+    }
+  }
+
  private:
   typedef detail::Node<T> Node;
   typedef TaggedValue<Node*> NodePtr;
@@ -71,13 +82,15 @@ TreiberStack<T>::TreiberStack() : top_(new AtomicNodePtr()) {
 }
 
 
+
+
 template<typename T>
 bool TreiberStack<T>::push(T item) {
   Node* n = new Node(item);
   NodePtr top_old;
   NodePtr top_new;
 
-  printf("TreiberStack<T>::push %lu: \n", item);
+  //printf("TreiberStack<T>::push %lu: \n", item);
   do {
     top_old = top_->load();
     n->next = top_old.value();
@@ -99,7 +112,7 @@ bool TreiberStack<T>::pop(T *item) {
     top_new = NodePtr(top_old.value()->next, top_old.tag() + 1);
   } while (!top_->swap(top_old, top_new));
   *item = top_old.value()->data;
-  printf("TreiberStack<T>::pop %lu: \n", *item);
+  //printf("TreiberStack<T>::pop %lu: \n", *item);
   return true;
 }
 

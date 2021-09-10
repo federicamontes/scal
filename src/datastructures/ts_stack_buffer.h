@@ -275,9 +275,7 @@ class TSStackBuffer {
 
     inline std::atomic<uint64_t> *insert_right(T element) {
 
-      printf("insert_right\n");
       uint64_t thread_id = scal::ThreadContext::get().thread_id();
-      printf("insert_right::thread_id %lu\n", thread_id);
 
       // Allocate a new item.
       Item *new_item = scal::tlget_aligned<Item>(scal::kCachePrefetch);
