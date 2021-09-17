@@ -23,7 +23,8 @@ namespace sds {
     template<typename T, typename Stack>
     class SCVectorStack : public Pool<T> {
     public:
-        SCVectorStack(uint64_t n, uint64_t k, uint64_t o);
+        SCVectorStack(uint64_t n, uint64_t k);
+        SCVectorStack(uint64_t n, uint64_t k, uint64_t o, uint64_t avgsize);
 
 	    std::vector<Stack *> S; //vector of stacks
 
@@ -35,6 +36,8 @@ namespace sds {
         uint64_t n; //size
         uint64_t k; //stealing threshold
         uint64_t ops; //number of operations per thread
+        uint64_t avg_size;
+
         int global_index;
         std::vector<int> operations;
         
@@ -53,16 +56,28 @@ namespace sds {
     };
 
     template<typename T, typename Stack>
-    SCVectorStack<T, Stack>::SCVectorStack(uint64_t size, uint64_t threshold, uint64_t o) {
+    SCVectorStack<T, Stack>::SCVectorStack(uint64_t size, uint64_t threshold) {
         
         n = size;
         k = threshold;
-        ops = o;
         S.resize(n);
         global_index = -1;
 
 
     }
+
+    template<typename T, typename Stack>
+    SCVectorStack<T, Stack>::SCVectorStack(uint64_t size, uint64_t threshold, uint64_t o, uint64_t avgsize) {
+
+        n = size;
+        k = threshold;
+        ops = o;
+        S.resize(n);
+        global_index = -1;
+        avg_size = avgsize;
+
+    }
+    
 
 
 
@@ -84,7 +99,7 @@ namespace sds {
     template<typename T, typename Stack>
     bool SCVectorStack<T, Stack>::push(int index, T element) {
 
-	    fprintf(stderr, "SCVectorStack<T, Stack>::TRY push on stack %d of value %lu \n", index, element);
+	    //fprintf(stderr, "SCVectorStack<T, Stack>::TRY push on stack %d of value %lu \n", index, element);
         if (S.at(index)->push(element)) {
             return true;
         }
@@ -99,7 +114,7 @@ namespace sds {
 
         if (pop_count >= k) stealing(index);
         bool res = S.at(index)->pop(&element);
-        fprintf(stderr, "SCVectorStack<T, Stack>::TRY pop on stack %d of value %lu \n", index, element);
+        //fprintf(stderr, "SCVectorStack<T, Stack>::TRY pop on stack %d of value %lu \n", index, element);
         if (!res) {
             stealing(index);
             //stealingRandom(index);
