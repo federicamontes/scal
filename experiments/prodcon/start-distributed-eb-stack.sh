@@ -5,11 +5,11 @@
 #experiments -> threshold: depends on #operations #operations/5, #operations/2, #operations/3, threshold=1 (always stealing)
 
 
-cd ..; cd out/Debug;
+cd ..; cd ..; cd out/Debug;
 
 count=10
 for i in $(seq $count); do
-    ./prodcon-sc-distributed-stack-ebstack -producers=$1 -consumers=$2 -threshold=$3 -operations=$4 >> ./output/output-prodcon-distributed-eb-stack ;
+    ./prodcon-sc-distributed-stack-ebstack -producers=$1 -consumers=$2 -threshold=$3 -operations=$4 >> ./output/prodcon-distributed-eb-stack$5 ;
 done
 
 

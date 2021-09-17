@@ -5,11 +5,11 @@
 #experiments -> threshold: depends on #operations #operations/5, #operations/2, #operations/3, threshold=1 (always stealing)
 
 
-cd ..; cd out/Debug;
+cd ..; cd ..; cd out/Debug;
 
 count=10
 for i in $(seq $count); do
-    ./seqalt-sc-distributed-stack-ebstack -threads=$1 -threshold=$2 -elements=$3 >> ./output/output-seqalt-distributed-eb-stack ;
+    ./seqalt-sc-distributed-stack-ebstack -threads=$1 -threshold=$2 -elements=$3 >> ./output/seqalt-distributed-eb-stack$4 ;
 done
 
 

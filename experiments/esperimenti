@@ -1,0 +1,9 @@
+ESPERIMENTI
+
+Al variare del numero di thread: 2 - 6 - 10 - 20 - 50 - 100 fissando una threshold e un access pattern.
+Esempio: threshold=50, access_pattern=1 thread[2,6,10..]
+
+per ogni access pattern di concurrent: default (param > 4), probabilistico (param == 1), come prodcon (param == 2), come seqalt (param == 3)
+
+Al variare della threshold (con 100 operations): 1(sempre stealing) - 20 - 50 - 80 - 150(mai stealing) fissando il numero di thread.
+
