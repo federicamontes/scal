@@ -8,6 +8,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <atomic>
 #include <gflags/gflags.h>
 
 #include "benchmark/common.h"
@@ -26,11 +27,13 @@
 
 DEFINE_string(prealloc_size, "1g", "tread local space that is initialized");
 DEFINE_uint64(operations, 80, "number of operations per thread");
+DEFINE_uint64(avg_size, 80, "number of operations for warm-up phase");
 DEFINE_uint64(num_threads, 1, "number of threads");
 DEFINE_uint64(threshold, 100, "stealing threshold");
 DEFINE_uint64(c, 250, "computational workload");
-DEFINE_uint64(access_pattern, 0, "choose which access pattern to execute between default, prodcon, seqalt or probabilistic");
-DEFINE_double(p, 0.5, "probability of enqueue");
+DEFINE_uint64(access_pattern, 4, "choose which access pattern to execute between default, prodcon, seqalt or probabilistic");
+DEFINE_double(prob, 0.5, "probability of enqueue");
+DEFINE_double(T, 1, "benchmark time");
 DEFINE_bool(print_summary, true, "print execution summary");
 
 using scal::Benchmark;
@@ -63,6 +66,9 @@ class ConcurrentBench : public Benchmark {
 uint64_t g_num_threads;
 uint64_t g_threshold;
 uint64_t g_operations;
+uint64_t g_avg_size;
+uint64_t end_benchmark = 0;
+uint64_t operations_eff;
 
 
 void ConcurrentBench::insert(void) {
@@ -108,24 +114,51 @@ void ConcurrentBench::bench_func(void) {
 	uint64_t thread_id = scal::ThreadContext::get().thread_id();
 
 	thread_local uint64_t value;
-	
-	thread_local double p;
+	thread_local uint64_t operations_thread;
+
 
 
 	if (FLAGS_access_pattern == 1) {
 
-		for (uint64_t i=0; i < g_operations; i++) {
-			srand (i);
-			p = (double) rand() / RAND_MAX;
-			if (p > FLAGS_p) {
-				value = thread_id * g_operations + i;
+		thread_local double p;
+
+		if (thread_id != 1) {
+			//warming up the data structure
+			for (uint64_t j = 0; j < g_avg_size/g_num_threads; j++) {
+				value = thread_id * (g_avg_size/g_num_threads) + j;
 				ds->put(value);
-			} else {
-				ds->get(&value);
 			}
 		}
 
-	} else if (FLAGS_access_pattern == 2) {
+
+		if (thread_id == 1) { 
+			sleep(FLAGS_T);
+			end_benchmark = 1;
+			pthread_exit(0);
+		}
+ 
+		uint64_t i = 0;
+		while(true) { 
+			srand (i);
+			p = (double) rand() / RAND_MAX;
+			if (p > FLAGS_prob) {
+				value = thread_id * g_operations + i;
+				ds->put(value);
+				//operations_eff++;
+				operations_thread++;
+			} else {
+				ds->get(&value);
+				//operations_eff++;
+				operations_thread++;
+			}
+			if (end_benchmark) { 
+				__sync_add_and_fetch(&operations_eff, operations_thread);
+				pthread_exit(0); 
+			}
+			i++;
+		}
+
+	}else if (FLAGS_access_pattern == 2) {
 
 		insert();
 
@@ -189,35 +222,68 @@ int main(int argc, const char **argv) {
     g_num_threads = FLAGS_num_threads;
     g_threshold = FLAGS_threshold;
     g_operations = FLAGS_operations;
+	g_avg_size = FLAGS_avg_size; //per il warm-up, deve essere almeno g_num_threads
 
 
-    scal::ThreadLocalAllocator::Get().Init(tlsize, true);
+    /*scal::ThreadLocalAllocator::Get().Init(tlsize, true);
 	scal::ThreadContext::prepare(g_num_threads+1);
     scal::ThreadContext::assign_context();
 
+    void *ds = ds_new();*/
 
-    void *ds = ds_new();
+    ConcurrentBench *benchmark;
 
-	ConcurrentBench *benchmark = new ConcurrentBench(
-		g_num_threads,
-		tlsize,
-		ds);
-	benchmark->run();
+    if (FLAGS_access_pattern == 1) {
 
+
+    	scal::ThreadLocalAllocator::Get().Init(tlsize, true);
+		scal::ThreadContext::prepare(g_num_threads+2);
+	    scal::ThreadContext::assign_context();
+
+	    void *ds = ds_new();
+
+		benchmark = new ConcurrentBench(
+			g_num_threads+1,
+			tlsize,
+			ds);
+		benchmark->run();
+
+	} else {
+
+		scal::ThreadLocalAllocator::Get().Init(tlsize, true);
+		scal::ThreadContext::prepare(g_num_threads+2);
+	    scal::ThreadContext::assign_context();
+
+	    void *ds = ds_new();
+
+		benchmark = new ConcurrentBench(
+			g_num_threads,
+			tlsize,
+			ds);
+		benchmark->run();
+
+	}
 
 	if (FLAGS_print_summary) {
 
-	    uint64_t exec_time = benchmark->execution_time();
+	    uint64_t exec_time;
+	    uint64_t num_operations;
 
-	    uint64_t num_operations = g_operations * g_num_threads;
-
+	    if (FLAGS_access_pattern == 1) {
+	    	exec_time = FLAGS_T*1000000;
+	    	num_operations = operations_eff;
+	    } else {
+	    	exec_time = benchmark->execution_time();
+	    	num_operations = g_operations * g_num_threads * 2;
+	    }
+	    
 
 		char buffer[1024] = {0};
 	    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " , \"threshold\": %" PRIu64 ", \"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " , \"throughput\": %" PRIu64 "",
 	        g_num_threads,
 	        g_threshold,
 	        exec_time,
-	        g_operations,
+	        num_operations,
 	        FLAGS_c,
 	        (uint64_t)(num_operations / (static_cast<double>(exec_time) / 1000)));
 
