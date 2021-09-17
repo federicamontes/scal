@@ -16,7 +16,7 @@ DEFINE_uint64(delay, 15000, "time waiting in the collision array");
 scal::EliminationBackoffStack<uint64_t> *ebs;
 
 void* ds_new() {
-  uint64_t size_collision = (g_num_threads + 1)/10;
+  uint64_t size_collision = (g_num_threads + 2)/10;
   if (FLAGS_collision != 0) {
     size_collision = FLAGS_collision;
   }
@@ -24,7 +24,7 @@ void* ds_new() {
     size_collision = 1;
   }
 
-  ebs = new scal::EliminationBackoffStack<uint64_t>(g_num_threads + 1, 
+  ebs = new scal::EliminationBackoffStack<uint64_t>(g_num_threads + 2, 
           size_collision, FLAGS_delay);
   return static_cast<void*>(ebs);
 }

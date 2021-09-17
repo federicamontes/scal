@@ -15,11 +15,11 @@ DEFINE_uint64(delay, 0, "delay in the insert operation");
 
 void* ds_new() {
 
-  TS_DS *ts_[g_num_threads+1];
-  sds::SCVectorStack<uint64_t, TS_DS> *vstack = new sds::SCVectorStack<uint64_t, TS_DS>(g_num_threads+1, g_threshold, g_operations);
+  TS_DS *ts_[g_num_threads+2];
+  sds::SCVectorStack<uint64_t, TS_DS> *vstack = new sds::SCVectorStack<uint64_t, TS_DS>(g_num_threads+2, g_threshold);
 
-  for(uint i=0; i <= g_num_threads; i++) {
-    ts_[i] = new TS_DS(g_num_threads + 1, FLAGS_delay);
+  for(uint i=0; i <= g_num_threads+1; i++) {
+    ts_[i] = new TS_DS(g_num_threads + 2, FLAGS_delay);
     vstack->S.at(i) = ts_[i];
   }
 

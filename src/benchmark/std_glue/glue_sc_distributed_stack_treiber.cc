@@ -16,13 +16,14 @@
 void* ds_new() {
 
   scal::TreiberStack<uint64_t> *ts[g_num_threads+1];
+
   sds::SCVectorStack<uint64_t, scal::TreiberStack<uint64_t>> *vstack = new sds::SCVectorStack<uint64_t, scal::TreiberStack<uint64_t>>(
-                                              g_num_threads+1, g_threshold, g_operations);
+                                              g_num_threads+1, g_threshold);
   
   for(uint i=0; i <= g_num_threads; i++) {
     ts[i] = new scal::TreiberStack<uint64_t>();
     vstack->S.at(i) = ts[i];
-    //printf("vstack->S.at(i) %p\n", vstack->S.at(i));
+    //printf("vstack %u: %p\n", i, vstack->S.at(i));
   }
 
   return static_cast<void*>(vstack);

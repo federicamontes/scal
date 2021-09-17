@@ -8,6 +8,10 @@
 #include <inttypes.h>
 
 extern uint64_t g_num_threads;
+extern uint64_t g_threshold;
+extern uint64_t g_operations;
+extern uint64_t g_avg_size;
+
 
 extern void* ds_new(void);
 extern bool ds_put(void *ds, uint64_t val);

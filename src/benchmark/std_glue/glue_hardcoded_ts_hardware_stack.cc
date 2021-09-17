@@ -16,7 +16,7 @@ DEFINE_uint64(delay, 0, "delay in the insert operation");
 TS_DS *ts_;
 
 void* ds_new() {
-  ts_ = new TS_DS(g_num_threads + 1, FLAGS_delay);
+  ts_ = new TS_DS(g_num_threads + 2, FLAGS_delay);
   return static_cast<void*>(ts_);
 }
 
