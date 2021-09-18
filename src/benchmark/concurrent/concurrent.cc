@@ -217,10 +217,10 @@ int main(int argc, const char **argv) {
     google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
 
 
-    /*uint64_t tlsize = scal::Human_size_to_pages(FLAGS_prealloc_size.c_str(),
-                                              FLAGS_prealloc_size.size());*/
+    uint64_t tlsize = scal::Human_size_to_pages(FLAGS_prealloc_size.c_str(),
+                                              FLAGS_prealloc_size.size());
 
-    uint64_t tlsize = 4096;
+    //uint64_t tlsize = 4096;
 
     g_num_threads = FLAGS_num_threads;
     g_threshold = FLAGS_threshold;
