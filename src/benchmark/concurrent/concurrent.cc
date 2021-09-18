@@ -116,6 +116,8 @@ void ConcurrentBench::bench_func(void) {
 	thread_local uint64_t value;
 	thread_local uint64_t operations_thread;
 
+	//printf("bench_func %lu\n", thread_id);
+
 
 	if (FLAGS_access_pattern == 1) {
 
@@ -132,13 +134,15 @@ void ConcurrentBench::bench_func(void) {
 
 		if (thread_id == 1) { 
 			sleep(FLAGS_T);
+			//printf("sono sveglio %lu\n", thread_id);
 			__sync_bool_compare_and_swap(&end_benchmark, 0, 1);
 			pthread_exit(0);
 		}
- 
+
 		uint64_t i = 0;
+		srand (123);
 		while(true) { 
-			srand (i);
+			
 			p = (double) rand() / RAND_MAX;
 			if (p > FLAGS_prob) {
 				value = thread_id * g_operations + i;
@@ -149,6 +153,7 @@ void ConcurrentBench::bench_func(void) {
 				operations_thread++;
 			}
 			if (end_benchmark) {
+				//printf("esco %lu\n", thread_id);
 				__sync_add_and_fetch(&operations_eff, operations_thread);
 				pthread_exit(0);
 			}
@@ -212,10 +217,10 @@ int main(int argc, const char **argv) {
     google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
 
 
-    uint64_t tlsize = scal::Human_size_to_pages(FLAGS_prealloc_size.c_str(),
-                                              FLAGS_prealloc_size.size());
+    /*uint64_t tlsize = scal::Human_size_to_pages(FLAGS_prealloc_size.c_str(),
+                                              FLAGS_prealloc_size.size());*/
 
-    //uint64_t tlsize = 4096;
+    uint64_t tlsize = 4096;
 
     g_num_threads = FLAGS_num_threads;
     g_threshold = FLAGS_threshold;
