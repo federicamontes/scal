@@ -18,7 +18,6 @@ Makefile.in
 
 # gyp
 Makefile
-out/
 build/
 *.Makefile
 *.target.mk
