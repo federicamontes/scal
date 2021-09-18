@@ -67,7 +67,7 @@ uint64_t g_num_threads;
 uint64_t g_threshold;
 uint64_t g_operations;
 uint64_t g_avg_size;
-uint64_t end_benchmark = 0;
+uint64_t end_benchmark;
 uint64_t operations_eff;
 
 
@@ -117,7 +117,6 @@ void ConcurrentBench::bench_func(void) {
 	thread_local uint64_t operations_thread;
 
 
-
 	if (FLAGS_access_pattern == 1) {
 
 		thread_local double p;
@@ -133,7 +132,7 @@ void ConcurrentBench::bench_func(void) {
 
 		if (thread_id == 1) { 
 			sleep(FLAGS_T);
-			end_benchmark = 1;
+			__sync_bool_compare_and_swap(&end_benchmark, 0, 1);
 			pthread_exit(0);
 		}
  
@@ -144,16 +143,14 @@ void ConcurrentBench::bench_func(void) {
 			if (p > FLAGS_prob) {
 				value = thread_id * g_operations + i;
 				ds->put(value);
-				//operations_eff++;
 				operations_thread++;
 			} else {
 				ds->get(&value);
-				//operations_eff++;
 				operations_thread++;
 			}
-			if (end_benchmark) { 
+			if (end_benchmark) {
 				__sync_add_and_fetch(&operations_eff, operations_thread);
-				pthread_exit(0); 
+				pthread_exit(0);
 			}
 			i++;
 		}
@@ -185,14 +182,15 @@ void ConcurrentBench::bench_func(void) {
 
 	} else {
 
-		for(uint64_t i = 0; i < g_operations; i++) {
+
+		for(uint64_t i = 0; i < (g_operations*2)/g_num_threads; i++) {
 			value = thread_id * g_operations + i;
 			ds->put(value);
 		}
 
 		//thread_local uint64_t res;
 		//thread_local uint64_t j = g_operations-1;
-		for(uint64_t i = 0; i < g_operations; i++) {
+		for(uint64_t i = 0; i < (g_operations*2)/g_num_threads; i++) {
 			//res = thread_id * g_operations + j;
 			ds->get(&value);
 			//--j;
@@ -214,10 +212,10 @@ int main(int argc, const char **argv) {
     google::ParseCommandLineFlags(&argc, const_cast<char***>(&argv), true);
 
 
-    /*uint64_t tlsize = scal::Human_size_to_pages(FLAGS_prealloc_size.c_str(),
-                                              FLAGS_prealloc_size.size());*/
+    uint64_t tlsize = scal::Human_size_to_pages(FLAGS_prealloc_size.c_str(),
+                                              FLAGS_prealloc_size.size());
 
-    uint64_t tlsize = 4096;
+    //uint64_t tlsize = 4096;
 
     g_num_threads = FLAGS_num_threads;
     g_threshold = FLAGS_threshold;
@@ -274,18 +272,19 @@ int main(int argc, const char **argv) {
 	    	num_operations = operations_eff;
 	    } else {
 	    	exec_time = benchmark->execution_time();
-	    	num_operations = g_operations * g_num_threads * 2;
+	    	num_operations = ((g_operations*2)/g_num_threads) * g_num_threads * 2;
 	    }
 	    
 
 		char buffer[1024] = {0};
-	    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " , \"threshold\": %" PRIu64 ", \"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " , \"throughput\": %" PRIu64 "",
+	    uint32_t n = snprintf(buffer, sizeof(buffer), "{\"threads\": %" PRIu64 " , \"threshold\": %" PRIu64 ", \"runtime\": %" PRIu64 " ,\"operations\": %" PRIu64 " ,\"c\": %" PRIu64 " , \"throughput\": %" PRIu64 ", \"total-operations\": %" PRIu64 "",
 	        g_num_threads,
 	        g_threshold,
 	        exec_time,
-	        num_operations,
+	        g_operations,
 	        FLAGS_c,
-	        (uint64_t)(num_operations / (static_cast<double>(exec_time) / 1000)));
+	        (uint64_t)(num_operations / (static_cast<double>(exec_time) / 1000)),
+	        num_operations);
 
 	    if (n != strlen(buffer)) {
 	      fprintf(stderr, "%s: error: failed to create summary string\n", __func__);
