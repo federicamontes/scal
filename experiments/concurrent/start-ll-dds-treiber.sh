@@ -5,9 +5,13 @@
 
 cd ..; cd ..; cd out/Debug;
 
-count=10
-for i in $(seq $count); do
-    ./concurrent-ll-dds-treiber -num_threads=$1 -threshold=$2 -operations=$3 -access_pattern=4 >> ./output/ll-dds-treiber$4 ;
-done
+declare -a arr=(1 2 5 10 20 40 60 80)
 
+
+count=3
+for j in "${arr[@]}"; do
+	for i in $(seq $count); do
+	    ./concurrent-ll-dds-treiber -num_threads=$j -operations=$2 -access_pattern=4 >> ./output/ll-dds-treiber$j ;
+	done
+done
 
