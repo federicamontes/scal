@@ -19,13 +19,13 @@ controllare con htop se qualcuno non sta girando test sul server
 
 pattern prob:
 threads: 1 2 5 10 20 40 60 80
-avg_size: 1000 10000 10000
+avg_size: 1000 10000 100000
 stack: treiber ll-treiber eb-stack
 runs: 3
 
 
 pattern rampe:
 threads: 1 2 5 10 20 40 60 80
-g_operations: 1000 10000 10000
+g_operations: 1000 10000 100000
 stack: treiber ll-treiber eb-stack
 runs: 3
