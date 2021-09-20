@@ -15,6 +15,7 @@
       '-fno-omit-frame-pointer',
       '-fno-exceptions',
       '-fPIC',
+      '-g'
       ],
     'default_cflags_cc' : [
       '-std=c++11',

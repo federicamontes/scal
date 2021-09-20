@@ -1115,5 +1115,15 @@
         'glue.gyp:hc-ts-hardware-stack',
       ],
     },
+    {
+      'target_name': 'concurrent-ll-dds-treiber',
+      'type': 'executable',
+      'libraries': [ '<@(default_libraries)' ],
+      'dependencies': [
+        'libscal',
+        'concurrent-base',
+        'glue.gyp:ll-dds-treiber',
+      ],
+    },
   ]
 }
